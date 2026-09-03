@@ -1,51 +1,42 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import CalendarView from '../components/CalendarView.astro';
+import { getAllMemes, getMemesForDate, getTodayKST, getUpcomingMeme } from '../lib/memes';
 
-// KST 기준 오늘 날짜 계산
-const now = new Date();
-const kstOffset = 9 * 60; // UTC+9
-const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-const kstDate = new Date(utc + (kstOffset * 60000));
-
-const month = kstDate.getMonth() + 1;
-const day = kstDate.getDate();
-const year = kstDate.getFullYear();
-
+const { year, month, day } = getTodayKST();
 const formattedToday = `${month}월 ${day}일`;
 const formattedFull = `${year}년 ${month}월 ${day}일`;
 
-// 임시 샘플 밈 데이터
-const sampleMeme = {
-  date: "9월 1일",
-  title: "9월 1일 요크신시티에서",
-  quote: "9월 1일 요크신시티에서 만나자.",
-  origin: "헌터x헌터 (Hunter x Hunter)",
-  desc: "만화 '헌터x헌터'에서 크라피카와 환영여단이 집결하기로 약속한 운명의 날짜. 매년 9월 1일이 되면 덕후 커뮤니티에 자동 소환되는 대표 밈입니다.",
-  tags: ["헌터헌터", "크라피카", "환영여단", "9월1일", "요크신시티"],
-  fileName: "2000-09-01_yorknew-city.jpg"
-};
+const allMemes = getAllMemes();
+const todayMemes = getMemesForDate(month, day);
+const upcoming = getUpcomingMeme(month, day, year);
+
+// 오늘 날짜 밈이 있으면 오늘의 밈, 없으면 곧 다가오는 밈 (Upcoming)
+const isTodayMeme = todayMemes.length > 0;
+const featuredMeme = isTodayMeme ? todayMemes[0] : upcoming?.meme || allMemes[0] || null;
+const dDay = !isTodayMeme && upcoming ? upcoming.daysRemaining : null;
 ---
 
-<Layout title={`오늘의 밈 (${formattedToday}) | Meme of the Day`}>
-	<main class="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+<Layout title={`Meme of the Day 📅 | ${formattedToday}`}>
+	<main class="max-w-5xl mx-auto px-4 py-10 sm:px-6 lg:px-8 space-y-10">
 		<!-- Header -->
-		<header class="text-center space-y-4 mb-12">
-			<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold tracking-wide uppercase">
-				<span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
-				Cloudflare Pages 배포 테스트 준비 완료
+		<header class="text-center space-y-3">
+			<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold tracking-wide uppercase">
+				<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+				로컬 미디어 데이터 연동 완료
 			</div>
 			
 			<h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
 				Meme of the Day 📅
 			</h1>
-			<p class="text-zinc-400 text-lg max-w-xl mx-auto">
-				"오늘 무슨 밈의 날인지 알아?"<br />
+			<p class="text-zinc-400 text-base sm:text-lg max-w-xl mx-auto">
+				"오늘 무슨 밈의 날인지 알아?"<br class="hidden sm:inline" />
 				날짜가 있는 인터넷 전설의 밈들을 수집하고 검색하세요.
 			</p>
 		</header>
 
 		<!-- Today's Date Banner -->
-		<div class="relative overflow-hidden rounded-2xl bg-zinc-900/80 border border-zinc-800 p-6 sm:p-8 mb-8 shadow-2xl backdrop-blur-xl">
+		<div class="relative overflow-hidden rounded-2xl bg-zinc-900/90 border border-zinc-800 p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
 			<div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 			<div class="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -58,95 +49,187 @@ const sampleMeme = {
 					</div>
 				</div>
 
-				<!-- Quick Date Navigation (UI Prototype) -->
-				<div class="flex items-center gap-2">
-					<button class="px-3 py-1.5 text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors border border-zinc-700/50">
-						← 어제 밈
-					</button>
-					<button class="px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors font-semibold shadow-lg shadow-indigo-500/20">
-						오늘
-					</button>
-					<button class="px-3 py-1.5 text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors border border-zinc-700/50">
-						내일 밈 →
-					</button>
+				<!-- Stats / Info -->
+				<div class="flex items-center gap-3">
+					<div class="text-right">
+						<div class="text-xs text-zinc-500">등록된 밈 자산</div>
+						<div class="text-sm font-bold text-zinc-200">{allMemes.length}개 수집됨</div>
+					</div>
 				</div>
 			</div>
 
-			<!-- Search Bar Placeholder -->
-			<div class="mt-6">
-				<div class="relative">
-					<input 
-						type="text" 
-						placeholder="날짜(예: 9월 1일, 09-01) 또는 키워드(요크신, 만우절)로 검색..."
-						class="w-full bg-zinc-950/80 border border-zinc-700/60 rounded-xl px-4 py-3 pl-11 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-					/>
-					<svg class="w-5 h-5 absolute left-3.5 top-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-					</svg>
+			<!-- Quick Filter Info -->
+			{isTodayMeme ? (
+				<div class="mt-4 inline-flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
+					<span>🎉 오늘({formattedToday})에 소환되는 밈이 있습니다!</span>
 				</div>
-			</div>
+			) : (
+				<div class="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-zinc-300 bg-zinc-950/60 px-4 py-2.5 rounded-xl border border-zinc-800">
+					<span>
+						💡 오늘({formattedToday}) 등록된 밈이 없습니다.
+						{dDay !== null && (
+							<strong class="text-amber-400 font-semibold ml-1">
+								{dDay}일 뒤 다가오는 밈({featuredMeme?.formattedDate})을 미리 만나보세요!
+							</strong>
+						)}
+					</span>
+					<span class="text-zinc-500 font-mono">data/media/</span>
+				</div>
+			)}
 		</div>
 
-		<!-- Featured Meme Preview Card -->
-		<section class="space-y-4">
-			<div class="flex items-center justify-between">
-				<h2 class="text-xl font-bold text-zinc-200 flex items-center gap-2">
-					<span>✨ 대표 밈 미리보기 예시</span>
-				</h2>
-				<span class="text-xs text-zinc-500 font-mono">data/media/{sampleMeme.fileName}</span>
-			</div>
-
-			<div class="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl overflow-hidden hover:border-zinc-700 transition-all group">
-				<!-- Media Area Placeholder -->
-				<div class="aspect-video w-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex flex-col items-center justify-center p-8 text-center relative border-b border-zinc-800">
-					<div class="w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-3 shadow-inner">
-						<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-						</svg>
-					</div>
-					<div class="text-lg font-bold text-zinc-200">"{sampleMeme.quote}"</div>
-					<p class="text-xs text-zinc-500 mt-1">미디어 파일: <code>{sampleMeme.fileName}</code></p>
-				</div>
-
-				<!-- Content Area -->
-				<div class="p-6 space-y-4">
-					<div>
-						<div class="flex items-center gap-2 text-xs font-semibold text-indigo-400 mb-1">
-							<span>📅 {sampleMeme.date}</span>
-							<span>•</span>
-							<span>출처: {sampleMeme.origin}</span>
-						</div>
-						<h3 class="text-2xl font-bold text-white group-hover:text-indigo-300 transition-colors">
-							{sampleMeme.title}
-						</h3>
-					</div>
-
-					<p class="text-zinc-400 text-sm leading-relaxed">
-						{sampleMeme.desc}
-					</p>
-
-					<!-- Tags -->
-					<div class="flex flex-wrap gap-2 pt-2">
-						{sampleMeme.tags.map(tag => (
-							<span class="text-xs px-2.5 py-1 rounded-md bg-zinc-800/80 text-zinc-300 border border-zinc-700/50 hover:border-indigo-500/50 hover:text-indigo-300 transition-colors cursor-pointer">
-								#{tag}
+		<!-- Featured Meme Section (Actual Image Display) -->
+		{featuredMeme && (
+			<section class="space-y-4">
+				<div class="flex items-center justify-between">
+					<h2 class="text-xl font-bold text-zinc-200 flex items-center gap-2">
+						{isTodayMeme ? (
+							<span>🔥 오늘의 밈 ({formattedToday})</span>
+						) : (
+							<span class="flex items-center gap-2">
+								<span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black">
+									D-{dDay}
+								</span>
+								<span>⏳ 곧 다가오는 밈 ({featuredMeme.formattedDate})</span>
 							</span>
-						))}
+						)}
+					</h2>
+					<span class="text-xs text-zinc-500 font-mono">data/media/{featuredMeme.fileName}</span>
+				</div>
+
+				<div class="bg-zinc-900/80 border border-zinc-800 rounded-2xl overflow-hidden hover:border-zinc-700 transition-all shadow-xl">
+					<!-- Actual Media Viewer -->
+					<div class="w-full bg-zinc-950 flex items-center justify-center border-b border-zinc-800/80 relative min-h-[320px] max-h-[580px] overflow-hidden">
+						{featuredMeme.media.type === 'video' ? (
+							<video 
+								src={featuredMeme.media.url} 
+								controls 
+								autoplay 
+								muted 
+								loop 
+								class="max-h-[560px] w-auto max-w-full object-contain mx-auto"
+							/>
+						) : (
+							<img 
+								src={featuredMeme.media.url} 
+								alt={featuredMeme.title} 
+								class="max-h-[560px] w-auto max-w-full object-contain mx-auto transition-transform duration-300 hover:scale-[1.01]"
+								loading="eager"
+							/>
+						)}
+					</div>
+
+					<!-- Content Details -->
+					<div class="p-6 sm:p-8 space-y-4">
+						<div class="flex flex-wrap items-center justify-between gap-2">
+							<div class="flex items-center gap-2">
+								<span class="px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 text-xs font-bold border border-indigo-500/30">
+									📅 {featuredMeme.formattedDate}
+								</span>
+								{!isTodayMeme && dDay !== null && (
+									<span class="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-500/30">
+										⏳ D-{dDay}일 뒤 소환
+									</span>
+								)}
+								{featuredMeme.date.isRecurring && (
+									<span class="px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 text-xs">
+										매년 반복 밈
+									</span>
+								)}
+							</div>
+							<a 
+								href={featuredMeme.media.url} 
+								target="_blank" 
+								rel="noopener noreferrer"
+								class="text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition-colors"
+							>
+								원본 이미지 보기 ↗
+							</a>
+						</div>
+
+						<h3 class="text-2xl sm:text-3xl font-black text-white">
+							{featuredMeme.title}
+						</h3>
+
+						{featuredMeme.description && (
+							<p class="text-zinc-300 text-sm sm:text-base leading-relaxed">
+								{featuredMeme.description}
+							</p>
+						)}
+
+						<!-- Tags -->
+						<div class="flex flex-wrap gap-2 pt-2">
+							{featuredMeme.tags.map(tag => (
+								<span class="text-xs px-2.5 py-1 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700/60 hover:border-indigo-500/50 transition-colors">
+									#{tag}
+								</span>
+							))}
+						</div>
 					</div>
 				</div>
-			</div>
+			</section>
+		)}
+
+		<!-- 365 Meme Calendar Section -->
+		<section id="calendar-section" class="space-y-4">
+			<CalendarView 
+				memes={allMemes} 
+				currentMonth={month} 
+				currentDay={day} 
+				currentYear={year} 
+			/>
 		</section>
 
-		<!-- Cloudflare Pages Deployment Guide -->
-		<section class="mt-12 p-6 rounded-2xl bg-zinc-900/40 border border-zinc-800 text-xs text-zinc-400 space-y-3">
-			<div class="flex items-center gap-2 text-zinc-200 font-bold text-sm">
-				<span>⚡ Cloudflare Pages 배포 설정 안내</span>
+		<!-- All Collected Memes Gallery -->
+		<section class="space-y-6 pt-4">
+			<div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+				<div>
+					<h2 class="text-xl font-bold text-zinc-100 flex items-center gap-2">
+						<span>📁 전체 수집된 밈 아카이브</span>
+					</h2>
+					<p class="text-xs text-zinc-500 mt-0.5"><code>data/media/</code> 폴더에서 자동 색인된 밈 목록</p>
+				</div>
+				<span class="text-xs bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-full font-mono">
+					{allMemes.length}개
+				</span>
 			</div>
-			<ul class="space-y-1.5 list-disc list-inside text-zinc-400">
-				<li><strong class="text-zinc-200">Framework preset:</strong> <code>Astro</code></li>
-				<li><strong class="text-zinc-200">Build command:</strong> <code>npm run build</code></li>
-				<li><strong class="text-zinc-200">Build output directory:</strong> <code>dist</code></li>
-			</ul>
+
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+				{allMemes.map(meme => (
+					<div class="bg-zinc-900/60 border border-zinc-800/80 rounded-xl overflow-hidden hover:border-zinc-700 transition-all group flex flex-col">
+						<div class="aspect-video w-full bg-zinc-950 flex items-center justify-center overflow-hidden border-b border-zinc-800 relative">
+							<img 
+								src={meme.media.url} 
+								alt={meme.title} 
+								class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+								loading="lazy"
+							/>
+							<div class="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/70 backdrop-blur-sm text-white text-[11px] font-semibold border border-white/10">
+								{meme.formattedDate}
+							</div>
+						</div>
+
+						<div class="p-4 space-y-2 flex-1 flex flex-col justify-between">
+							<div>
+								<h3 class="font-bold text-white group-hover:text-indigo-400 transition-colors text-lg">
+									{meme.title}
+								</h3>
+								<p class="text-xs text-zinc-500 font-mono mt-0.5 truncate">
+									{meme.fileName}
+								</p>
+							</div>
+
+							<div class="flex flex-wrap gap-1.5 pt-2">
+								{meme.tags.map(tag => (
+									<span class="text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">
+										#{tag}
+									</span>
+								))}
+							</div>
+						</div>
+					</div>
+				))}
+			</div>
 		</section>
 	</main>
 </Layout>
