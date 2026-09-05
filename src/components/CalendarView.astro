@@ -152,7 +152,7 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
     // 이번 달 날짜들
     for (let day = 1; day <= daysInMonth; day++) {
       const cell = document.createElement('div');
-      const dayMemes = memesData.filter(m => m.date.month === month && m.date.day === day);
+      const dayMemes = memesData.filter(m => (m.date.month === null || m.date.month === month) && m.date.day === day);
       const isToday = month === initialMonth && day === initialDay;
       const hasMeme = dayMemes.length > 0;
 

@@ -6,12 +6,13 @@ export interface MemeItem {
   fileName: string;
   title: string;
   date: {
-    month: number;
+    month: number | null; // null이면 매월 반복
     day: number;
     year: number | null;
     isRecurring: boolean;
+    isMonthly?: boolean;
   };
-  formattedDate: string; // 예: "9월 1일" 또는 "2000년 9월 1일"
+  formattedDate: string; // 예: "9월 1일" 또는 "2000년 9월 1일" 또는 "매월 20일"
   media: {
     url: string;
     type: 'image' | 'video' | 'gif';
@@ -51,7 +52,8 @@ export function getAllMemes(): MemeItem[] {
     }
   }
 
-  const memePattern = /^(\d{4}|[xX]{4})-([01]\d)-([0-3]\d)[_-](.+)\.([a-zA-Z0-9]+)$/;
+  // YYYY-09-01_name.ext 또는 YYYY-MM-20.gif 또는 2022-10-31_name.png 등 유연하게 매칭
+  const memePattern = /^(\d{4}|[xX]{4}|[yY]{4})-([01]\d|[mM]{2})-([0-3]\d)(?:[_-](.+))?\.([a-zA-Z0-9]+)$/;
 
   const memes: MemeItem[] = [];
 
@@ -59,10 +61,12 @@ export function getAllMemes(): MemeItem[] {
     const match = file.match(memePattern);
     if (!match) continue;
 
-    const [, yearStr, monthStr, dayStr, slug, ext] = match;
-    const isYearExplicit = !yearStr.toLowerCase().includes('x') && yearStr !== '0000';
+    const [, yearStr, monthStr, dayStr, rawSlug, ext] = match;
+    const isYearExplicit = !yearStr.toLowerCase().includes('x') && !yearStr.toLowerCase().includes('y') && yearStr !== '0000';
     const year = isYearExplicit ? parseInt(yearStr, 10) : null;
-    const month = parseInt(monthStr, 10);
+
+    const isMonthly = monthStr.toLowerCase().includes('m');
+    const month = isMonthly ? null : parseInt(monthStr, 10);
     const day = parseInt(dayStr, 10);
 
     const extLower = ext.toLowerCase();
@@ -72,8 +76,18 @@ export function getAllMemes(): MemeItem[] {
         ? 'gif'
         : 'image';
 
-    const defaultTitle = slug.replace(/[-_]/g, ' ').trim();
-    const formattedDate = year ? `${year}년 ${month}월 ${day}일` : `${month}월 ${day}일`;
+    const slug = rawSlug ? rawSlug.replace(/[-_]/g, ' ').trim() : (isMonthly ? `매월 ${day}일 밈` : `${month}월 ${day}일 밈`);
+    const defaultTitle = slug;
+
+    let formattedDate = '';
+    if (isMonthly) {
+      formattedDate = `매월 ${day}일`;
+    } else if (year) {
+      formattedDate = `${year}년 ${month}월 ${day}일`;
+    } else {
+      formattedDate = `${month}월 ${day}일`;
+    }
+
     const id = file.replace(/\.[^/.]+$/, '');
 
     // 기본 데이터
@@ -86,6 +100,7 @@ export function getAllMemes(): MemeItem[] {
         day,
         year,
         isRecurring: !isYearExplicit,
+        isMonthly,
       },
       formattedDate,
       media: {
@@ -93,7 +108,7 @@ export function getAllMemes(): MemeItem[] {
         type: mediaType,
         fileName: file,
       },
-      tags: [`${month}월 ${day}일`, defaultTitle],
+      tags: isMonthly ? [`매월 ${day}일`, defaultTitle] : [`${month}월 ${day}일`, defaultTitle],
     };
 
     // memes.json 메타데이터 머지
@@ -111,16 +126,23 @@ export function getAllMemes(): MemeItem[] {
     memes.push(baseMeme);
   }
 
-  // 날짜 순 정렬 (월, 일 순)
+  // 날짜 순 정렬 (월, 일 순, 매월 반복은 0월로 취급)
   return memes.sort((a, b) => {
-    if (a.date.month !== b.date.month) return a.date.month - b.date.month;
+    const monthA = a.date.month ?? 0;
+    const monthB = b.date.month ?? 0;
+    if (monthA !== monthB) return monthA - monthB;
     return a.date.day - b.date.day;
   });
 }
 
 export function getMemesForDate(month: number, day: number): MemeItem[] {
   const all = getAllMemes();
-  return all.filter(m => m.date.month === month && m.date.day === day);
+  return all.filter(m => {
+    if (m.date.month === null) {
+      return m.date.day === day;
+    }
+    return m.date.month === month && m.date.day === day;
+  });
 }
 
 export function getTodayKST(): { month: number; day: number; year: number } {
@@ -152,15 +174,26 @@ export function getUpcomingMeme(todayMonth: number, todayDay: number, currentYea
   let minDiffDays = Infinity;
 
   for (const meme of all) {
-    // 같은 날짜는 패스 (오늘 밈)
-    if (meme.date.month === todayMonth && meme.date.day === todayDay) continue;
+    let target: Date;
 
-    // 올해 해당 날짜
-    let target = new Date(currentYear, meme.date.month - 1, meme.date.day);
+    if (meme.date.month === null) {
+      // 매월 반복 밈
+      if (meme.date.day === todayDay) continue; // 오늘이면 제외
+      if (meme.date.day > todayDay) {
+        // 이번 달 해당 날짜
+        target = new Date(currentYear, todayMonth - 1, meme.date.day);
+      } else {
+        // 다음 달 해당 날짜
+        target = new Date(currentYear, todayMonth, meme.date.day);
+      }
+    } else {
+      // 연간/고정 밈
+      if (meme.date.month === todayMonth && meme.date.day === todayDay) continue;
 
-    // 이미 지난 날짜라면 내년 해당 날짜로 계산
-    if (target.getTime() < today.getTime()) {
-      target = new Date(currentYear + 1, meme.date.month - 1, meme.date.day);
+      target = new Date(currentYear, meme.date.month - 1, meme.date.day);
+      if (target.getTime() < today.getTime()) {
+        target = new Date(currentYear + 1, meme.date.month - 1, meme.date.day);
+      }
     }
 
     const diffTime = target.getTime() - today.getTime();
