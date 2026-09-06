@@ -92,8 +92,9 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
     </div>
 
     <div class="flex flex-col sm:flex-row gap-4 items-start">
-      <div class="w-full sm:w-64 aspect-video bg-zinc-900 rounded-lg overflow-hidden flex items-center justify-center border border-zinc-800 flex-shrink-0">
+      <div class="w-full sm:w-64 aspect-video bg-zinc-900 rounded-lg overflow-hidden flex items-center justify-center border border-zinc-800 flex-shrink-0 relative">
         <img id="cal-preview-img" src="" alt="" class="w-full h-full object-cover" />
+        <video id="cal-preview-video" src="" controls autoplay muted loop playsinline class="w-full h-full object-cover hidden"></video>
       </div>
       <div class="space-y-2 flex-1">
         <p id="cal-preview-desc" class="text-xs sm:text-sm text-zinc-300 leading-relaxed"></p>
@@ -135,6 +136,7 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
   const previewBadge = document.getElementById('cal-preview-badge');
   const previewTitle = document.getElementById('cal-preview-title');
   const previewImg = document.getElementById('cal-preview-img') as HTMLImageElement | null;
+  const previewVideo = document.getElementById('cal-preview-video') as HTMLVideoElement | null;
   const previewDesc = document.getElementById('cal-preview-desc');
   const previewTags = document.getElementById('cal-preview-tags');
   const previewLink = document.getElementById('cal-preview-link') as HTMLAnchorElement | null;
@@ -142,6 +144,9 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
 
   previewClose?.addEventListener('click', () => {
     previewCard?.classList.add('hidden');
+    if (previewVideo) {
+      previewVideo.pause();
+    }
   });
 
   function renderCalendar(month: number) {
@@ -208,12 +213,28 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
         const thumbWrap = document.createElement('div');
         thumbWrap.className = 'mt-1 w-full h-8 sm:h-12 rounded-lg overflow-hidden border border-zinc-700/80 relative bg-zinc-900 flex items-center justify-center';
 
-        const img = document.createElement('img');
-        img.src = meme.media.url;
-        img.alt = meme.title;
-        img.className = 'w-full h-full object-cover group-hover:scale-110 transition-transform duration-200';
-        img.loading = 'lazy';
-        thumbWrap.appendChild(img);
+        if (meme.media.type === 'video') {
+          const video = document.createElement('video');
+          video.src = meme.media.url;
+          video.autoplay = true;
+          video.loop = true;
+          video.muted = true;
+          video.playsInline = true;
+          video.className = 'w-full h-full object-cover group-hover:scale-110 transition-transform duration-200 pointer-events-none';
+          thumbWrap.appendChild(video);
+
+          const videoBadge = document.createElement('span');
+          videoBadge.className = 'absolute bottom-0.5 right-0.5 text-[8px] bg-black/80 text-indigo-300 font-bold px-1 rounded pointer-events-none';
+          videoBadge.textContent = '▶';
+          thumbWrap.appendChild(videoBadge);
+        } else {
+          const img = document.createElement('img');
+          img.src = meme.media.url;
+          img.alt = meme.title;
+          img.className = 'w-full h-full object-cover group-hover:scale-110 transition-transform duration-200';
+          img.loading = 'lazy';
+          thumbWrap.appendChild(img);
+        }
 
         cell.appendChild(thumbWrap);
 
@@ -237,7 +258,14 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
           previewCard?.classList.remove('hidden');
           if (previewBadge) previewBadge.textContent = `${month}월 ${day}일`;
           if (previewTitle) previewTitle.textContent = '등록된 밈이 없습니다';
-          if (previewImg) previewImg.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150"><rect fill="%2318181b" width="200" height="150"/><text fill="%2371717a" font-size="12" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">No Meme Yet</text></svg>';
+          if (previewVideo) {
+            previewVideo.pause();
+            previewVideo.classList.add('hidden');
+          }
+          if (previewImg) {
+            previewImg.classList.remove('hidden');
+            previewImg.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150"><rect fill="%2318181b" width="200" height="150"/><text fill="%2371717a" font-size="12" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">No Meme Yet</text></svg>';
+          }
           if (previewDesc) previewDesc.textContent = `이 날짜(${month}월 ${day}일)에 해당하는 밈 파일을 data/media/ 폴더에 추가해 보세요! (예: xxxx-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}_name.png)`;
           if (previewTags) previewTags.innerHTML = '';
           if (previewLink) previewLink.style.display = 'none';
@@ -255,10 +283,26 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
 
     if (previewBadge) previewBadge.textContent = meme.formattedDate;
     if (previewTitle) previewTitle.textContent = meme.title;
-    if (previewImg) {
-      previewImg.src = meme.media.url;
-      previewImg.alt = meme.title;
+
+    if (meme.media.type === 'video') {
+      if (previewImg) previewImg.classList.add('hidden');
+      if (previewVideo) {
+        previewVideo.src = meme.media.url;
+        previewVideo.classList.remove('hidden');
+        previewVideo.play().catch(() => {});
+      }
+    } else {
+      if (previewVideo) {
+        previewVideo.pause();
+        previewVideo.classList.add('hidden');
+      }
+      if (previewImg) {
+        previewImg.src = meme.media.url;
+        previewImg.alt = meme.title;
+        previewImg.classList.remove('hidden');
+      }
     }
+
     if (previewDesc) {
       previewDesc.textContent = meme.description || `${meme.title} - ${meme.formattedDate} 대표 밈 (파일명: ${meme.fileName})`;
     }
