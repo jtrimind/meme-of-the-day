@@ -108,9 +108,18 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
   </div>
 </div>
 
-<script is:inline define:vars={{ memes, initialMonth: currentMonth, initialDay: currentDay, currentYear }}>
-  let activeMonth = initialMonth;
-  const memesData = memes;
+<script id="calendar-memes-data" type="application/json" set:html={JSON.stringify(memes).replace(/</g, '\\u003c')} />
+
+<script>
+  import { getTodayKST, type MemeItem } from '../lib/meme-utils';
+
+  const dataEl = document.getElementById('calendar-memes-data') || document.getElementById('memes-data');
+  const memesData: MemeItem[] = dataEl ? JSON.parse(dataEl.textContent || '[]') : [];
+
+  const { year: kstYear, month: kstMonth, day: kstDay } = getTodayKST();
+
+  let activeMonth = kstMonth;
+  let activeYear = kstYear;
 
   const monthDisplay = document.getElementById('cal-month-display');
   const daysGrid = document.getElementById('cal-days-grid');
@@ -118,27 +127,30 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
   const nextBtn = document.getElementById('cal-next-month');
   const todayBtn = document.getElementById('cal-today-btn');
 
+  if (todayBtn) {
+    todayBtn.textContent = `오늘(${kstMonth}월 ${kstDay}일)`;
+  }
+
   const previewCard = document.getElementById('cal-preview-card');
   const previewBadge = document.getElementById('cal-preview-badge');
   const previewTitle = document.getElementById('cal-preview-title');
-  const previewImg = document.getElementById('cal-preview-img');
+  const previewImg = document.getElementById('cal-preview-img') as HTMLImageElement | null;
   const previewDesc = document.getElementById('cal-preview-desc');
   const previewTags = document.getElementById('cal-preview-tags');
-  const previewLink = document.getElementById('cal-preview-link');
+  const previewLink = document.getElementById('cal-preview-link') as HTMLAnchorElement | null;
   const previewClose = document.getElementById('cal-preview-close');
 
   previewClose?.addEventListener('click', () => {
     previewCard?.classList.add('hidden');
   });
 
-  function renderCalendar(month) {
+  function renderCalendar(month: number) {
     if (!daysGrid || !monthDisplay) return;
 
     monthDisplay.textContent = `${month}월`;
 
-    // 2026년 기준 일자 계산
-    const firstDayOfWeek = new Date(currentYear, month - 1, 1).getDay(); // 0 (일) ~ 6 (토)
-    const daysInMonth = new Date(currentYear, month, 0).getDate();
+    const firstDayOfWeek = new Date(activeYear, month - 1, 1).getDay(); // 0 (일) ~ 6 (토)
+    const daysInMonth = new Date(activeYear, month, 0).getDate();
 
     daysGrid.innerHTML = '';
 
@@ -153,7 +165,7 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
     for (let day = 1; day <= daysInMonth; day++) {
       const cell = document.createElement('div');
       const dayMemes = memesData.filter(m => (m.date.month === null || m.date.month === month) && m.date.day === day);
-      const isToday = month === initialMonth && day === initialDay;
+      const isToday = activeYear === kstYear && month === kstMonth && day === kstDay;
       const hasMeme = dayMemes.length > 0;
 
       let cellClass = 'relative aspect-square sm:aspect-[4/5] rounded-xl border p-1 sm:p-2 flex flex-col justify-between transition-all cursor-pointer select-none group ';
@@ -237,7 +249,7 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
     }
   }
 
-  function showMemePreview(meme) {
+  function showMemePreview(meme: MemeItem) {
     if (!previewCard) return;
     previewCard.classList.remove('hidden');
 
@@ -256,7 +268,7 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
     }
     if (previewTags) {
       previewTags.innerHTML = '';
-      meme.tags.forEach(tag => {
+      meme.tags.forEach((tag: string) => {
         const tagSpan = document.createElement('span');
         tagSpan.className = 'text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60';
         tagSpan.textContent = `#${tag}`;
@@ -268,17 +280,28 @@ const { memes, currentMonth, currentDay, currentYear } = Astro.props;
   }
 
   prevBtn?.addEventListener('click', () => {
-    activeMonth = activeMonth === 1 ? 12 : activeMonth - 1;
+    if (activeMonth === 1) {
+      activeMonth = 12;
+      activeYear--;
+    } else {
+      activeMonth--;
+    }
     renderCalendar(activeMonth);
   });
 
   nextBtn?.addEventListener('click', () => {
-    activeMonth = activeMonth === 12 ? 1 : activeMonth + 1;
+    if (activeMonth === 12) {
+      activeMonth = 1;
+      activeYear++;
+    } else {
+      activeMonth++;
+    }
     renderCalendar(activeMonth);
   });
 
   todayBtn?.addEventListener('click', () => {
-    activeMonth = initialMonth;
+    activeMonth = kstMonth;
+    activeYear = kstYear;
     renderCalendar(activeMonth);
   });
 

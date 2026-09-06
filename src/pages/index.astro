@@ -44,8 +44,8 @@ const dDay = !isTodayMeme && upcoming ? upcoming.daysRemaining : null;
 				<div>
 					<span class="text-xs font-bold uppercase tracking-wider text-indigo-400">TODAY'S DATE</span>
 					<div class="text-2xl sm:text-3xl font-black text-white flex items-center gap-3 mt-1">
-						<span>{formattedToday}</span>
-						<span class="text-xs font-normal text-zinc-400 px-2 py-0.5 rounded bg-zinc-800">{formattedFull} (KST)</span>
+						<span id="today-date-short">{formattedToday}</span>
+						<span id="today-date-full" class="text-xs font-normal text-zinc-400 px-2 py-0.5 rounded bg-zinc-800">{formattedFull} (KST)</span>
 					</div>
 				</div>
 
@@ -59,30 +59,32 @@ const dDay = !isTodayMeme && upcoming ? upcoming.daysRemaining : null;
 			</div>
 
 			<!-- Quick Filter Info -->
-			{isTodayMeme ? (
-				<div class="mt-4 inline-flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
-					<span>🎉 오늘({formattedToday})에 소환되는 밈이 있습니다!</span>
-				</div>
-			) : (
-				<div class="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-zinc-300 bg-zinc-950/60 px-4 py-2.5 rounded-xl border border-zinc-800">
-					<span>
-						💡 오늘({formattedToday}) 등록된 밈이 없습니다.
-						{dDay !== null && (
-							<strong class="text-amber-400 font-semibold ml-1">
-								{dDay}일 뒤 다가오는 밈({featuredMeme?.formattedDate})을 미리 만나보세요!
-							</strong>
-						)}
-					</span>
-					<span class="text-zinc-500 font-mono">data/media/</span>
-				</div>
-			)}
+			<div id="today-status-container">
+				{isTodayMeme ? (
+					<div class="mt-4 inline-flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
+						<span>🎉 오늘({formattedToday})에 소환되는 밈이 있습니다!</span>
+					</div>
+				) : (
+					<div class="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-zinc-300 bg-zinc-950/60 px-4 py-2.5 rounded-xl border border-zinc-800">
+						<span>
+							💡 오늘({formattedToday}) 등록된 밈이 없습니다.
+							{dDay !== null && (
+								<strong class="text-amber-400 font-semibold ml-1">
+									{dDay}일 뒤 다가오는 밈({featuredMeme?.formattedDate})을 미리 만나보세요!
+								</strong>
+							)}
+						</span>
+						<span class="text-zinc-500 font-mono">data/media/</span>
+					</div>
+				)}
+			</div>
 		</div>
 
 		<!-- Featured Meme Section (Actual Image Display) -->
 		{featuredMeme && (
-			<section class="space-y-4">
+			<section id="featured-meme-section" class="space-y-4">
 				<div class="flex items-center justify-between">
-					<h2 class="text-xl font-bold text-zinc-200 flex items-center gap-2">
+					<h2 id="featured-header-title" class="text-xl font-bold text-zinc-200 flex items-center gap-2">
 						{isTodayMeme ? (
 							<span>🔥 오늘의 밈 ({formattedToday})</span>
 						) : (
@@ -94,12 +96,12 @@ const dDay = !isTodayMeme && upcoming ? upcoming.daysRemaining : null;
 							</span>
 						)}
 					</h2>
-					<span class="text-xs text-zinc-500 font-mono">data/media/{featuredMeme.fileName}</span>
+					<span id="featured-filename" class="text-xs text-zinc-500 font-mono">data/media/{featuredMeme.fileName}</span>
 				</div>
 
 				<div class="bg-zinc-900/80 border border-zinc-800 rounded-2xl overflow-hidden hover:border-zinc-700 transition-all shadow-xl">
 					<!-- Actual Media Viewer -->
-					<div class="w-full bg-zinc-950 flex items-center justify-center border-b border-zinc-800/80 relative min-h-[320px] max-h-[580px] overflow-hidden">
+					<div id="featured-media-container" class="w-full bg-zinc-950 flex items-center justify-center border-b border-zinc-800/80 relative min-h-[320px] max-h-[580px] overflow-hidden">
 						{featuredMeme.media.type === 'video' ? (
 							<video 
 								src={featuredMeme.media.url} 
@@ -122,7 +124,7 @@ const dDay = !isTodayMeme && upcoming ? upcoming.daysRemaining : null;
 					<!-- Content Details -->
 					<div class="p-6 sm:p-8 space-y-4">
 						<div class="flex flex-wrap items-center justify-between gap-2">
-							<div class="flex items-center gap-2">
+							<div id="featured-meta-badges" class="flex items-center gap-2">
 								<span class="px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 text-xs font-bold border border-indigo-500/30">
 									📅 {featuredMeme.formattedDate}
 								</span>
@@ -138,27 +140,28 @@ const dDay = !isTodayMeme && upcoming ? upcoming.daysRemaining : null;
 								)}
 							</div>
 							<a 
+								id="featured-view-link"
 								href={featuredMeme.media.url} 
 								target="_blank" 
-								rel="noopener noreferrer"
+								rel="noopener noreferrer" 
 								class="text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition-colors"
 							>
 								원본 이미지 보기 ↗
 							</a>
 						</div>
 
-						<h3 class="text-2xl sm:text-3xl font-black text-white">
+						<h3 id="featured-title" class="text-2xl sm:text-3xl font-black text-white">
 							{featuredMeme.title}
 						</h3>
 
 						{featuredMeme.description && (
-							<p class="text-zinc-300 text-sm sm:text-base leading-relaxed">
+							<p id="featured-desc" class="text-zinc-300 text-sm sm:text-base leading-relaxed">
 								{featuredMeme.description}
 							</p>
 						)}
 
 						<!-- Tags -->
-						<div class="flex flex-wrap gap-2 pt-2">
+						<div id="featured-tags" class="flex flex-wrap gap-2 pt-2">
 							{featuredMeme.tags.map(tag => (
 								<span class="text-xs px-2.5 py-1 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700/60 hover:border-indigo-500/50 transition-colors">
 									#{tag}
@@ -232,4 +235,160 @@ const dDay = !isTodayMeme && upcoming ? upcoming.daysRemaining : null;
 			</div>
 		</section>
 	</main>
+
+	<script id="memes-data" type="application/json" set:html={JSON.stringify(allMemes).replace(/</g, '\\u003c')} />
+
+	<script>
+	import { getTodayKST, getMemesForDate, getUpcomingMeme, type MemeItem } from '../lib/meme-utils';
+
+	function escapeHtml(str: string) {
+		const div = document.createElement('div');
+		div.textContent = str;
+		return div.innerHTML;
+	}
+
+	const dataEl = document.getElementById('memes-data');
+	const allMemes: MemeItem[] = dataEl ? JSON.parse(dataEl.textContent || '[]') : [];
+
+	const { year, month, day } = getTodayKST();
+	const formattedToday = `${month}월 ${day}일`;
+	const formattedFull = `${year}년 ${month}월 ${day}일`;
+
+	// Update page title
+	document.title = `Meme of the Day 📅 | ${formattedToday}`;
+
+	// Update Today's Date banner
+	const shortDateEl = document.getElementById('today-date-short');
+	if (shortDateEl) shortDateEl.textContent = formattedToday;
+
+	const fullDateEl = document.getElementById('today-date-full');
+	if (fullDateEl) fullDateEl.textContent = `${formattedFull} (KST)`;
+
+	// Re-evaluate today's meme & upcoming meme
+	const todayMemes = getMemesForDate(allMemes, month, day);
+	const upcoming = getUpcomingMeme(allMemes, month, day, year);
+	const isTodayMeme = todayMemes.length > 0;
+	const featuredMeme = isTodayMeme ? todayMemes[0] : (upcoming?.meme || allMemes[0] || null);
+	const dDay = !isTodayMeme && upcoming ? upcoming.daysRemaining : null;
+
+	// Update Status Box
+	const statusContainer = document.getElementById('today-status-container');
+	if (statusContainer) {
+		if (isTodayMeme) {
+			statusContainer.innerHTML = `
+				<div class="mt-4 inline-flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
+					<span>🎉 오늘(${formattedToday})에 소환되는 밈이 있습니다!</span>
+				</div>
+			`;
+		} else {
+			statusContainer.innerHTML = `
+				<div class="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-zinc-300 bg-zinc-950/60 px-4 py-2.5 rounded-xl border border-zinc-800">
+					<span>
+						💡 오늘(${formattedToday}) 등록된 밈이 없습니다.
+						${dDay !== null ? `<strong class="text-amber-400 font-semibold ml-1">${dDay}일 뒤 다가오는 밈(${escapeHtml(featuredMeme?.formattedDate || '')})을 미리 만나보세요!</strong>` : ''}
+					</span>
+					<span class="text-zinc-500 font-mono">data/media/</span>
+				</div>
+			`;
+		}
+	}
+
+	// Update Featured Meme Section
+	if (featuredMeme) {
+		const headerTitleEl = document.getElementById('featured-header-title');
+		if (headerTitleEl) {
+			if (isTodayMeme) {
+				headerTitleEl.innerHTML = `<span>🔥 오늘의 밈 (${formattedToday})</span>`;
+			} else {
+				headerTitleEl.innerHTML = `
+					<span class="flex items-center gap-2">
+						<span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black">
+							D-${dDay}
+						</span>
+						<span>⏳ 곧 다가오는 밈 (${escapeHtml(featuredMeme.formattedDate)})</span>
+					</span>
+				`;
+			}
+		}
+
+		const filenameEl = document.getElementById('featured-filename');
+		if (filenameEl) {
+			filenameEl.textContent = `data/media/${featuredMeme.fileName}`;
+		}
+
+		const mediaContainer = document.getElementById('featured-media-container');
+		if (mediaContainer) {
+			if (featuredMeme.media.type === 'video') {
+				mediaContainer.innerHTML = `
+					<video 
+						src="${featuredMeme.media.url}" 
+						controls 
+						autoplay 
+						muted 
+						loop 
+						class="max-h-[560px] w-auto max-w-full object-contain mx-auto"
+					/>
+				`;
+			} else {
+				mediaContainer.innerHTML = `
+					<img 
+						src="${featuredMeme.media.url}" 
+						alt="${escapeHtml(featuredMeme.title)}" 
+						class="max-h-[560px] w-auto max-w-full object-contain mx-auto transition-transform duration-300 hover:scale-[1.01]" 
+						loading="eager"
+					/>
+				`;
+			}
+		}
+
+		const metaBadgesEl = document.getElementById('featured-meta-badges');
+		if (metaBadgesEl) {
+			let badgesHtml = `
+				<span class="px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 text-xs font-bold border border-indigo-500/30">
+					📅 ${escapeHtml(featuredMeme.formattedDate)}
+				</span>
+			`;
+			if (!isTodayMeme && dDay !== null) {
+				badgesHtml += `
+					<span class="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-500/30">
+						⏳ D-${dDay}일 뒤 소환
+					</span>
+				`;
+			}
+			if (featuredMeme.date.isRecurring) {
+				badgesHtml += `
+					<span class="px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 text-xs">
+						매년 반복 밈
+					</span>
+				`;
+			}
+			metaBadgesEl.innerHTML = badgesHtml;
+		}
+
+		const viewLink = document.getElementById('featured-view-link') as HTMLAnchorElement | null;
+		if (viewLink) {
+			viewLink.href = featuredMeme.media.url;
+		}
+
+		const titleEl = document.getElementById('featured-title');
+		if (titleEl) {
+			titleEl.textContent = featuredMeme.title;
+		}
+
+		const descEl = document.getElementById('featured-desc');
+		if (descEl) {
+			descEl.textContent = featuredMeme.description || '';
+			descEl.style.display = featuredMeme.description ? 'block' : 'none';
+		}
+
+		const tagsEl = document.getElementById('featured-tags');
+		if (tagsEl) {
+			tagsEl.innerHTML = featuredMeme.tags.map(tag => `
+				<span class="text-xs px-2.5 py-1 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700/60 hover:border-indigo-500/50 transition-colors">
+					#${escapeHtml(tag)}
+				</span>
+			`).join('');
+		}
+	}
+</script>
 </Layout>
